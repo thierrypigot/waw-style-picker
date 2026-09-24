@@ -1,0 +1,170 @@
+/*
+ * Masque le panneau natif "Styles" (en-tête compris) uniquement quand notre
+ * panneau est présent. .block-editor-block-styles vérifié présent en WP 7.1.2.
+ */
+.block-editor-block-inspector:has(.waw-style-picker-panel) .components-tools-panel:has(.block-editor-block-styles) {
+	display: none;
+}
+
+/*
+ * InspectorControls group="styles" rend notre panneau après tous les panneaux
+ * natifs. Le conteneur commun n'a que des classes hachées : on le cible via
+ * :has() et on remonte notre panneau en tête, à la place du natif.
+ */
+.block-editor-block-inspector :has(> div > .waw-style-picker-panel) {
+	display: flex;
+	flex-direction: column;
+}
+
+.block-editor-block-inspector div:has(> .waw-style-picker-panel) {
+	order: -1;
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Modale : calquée sur "Explorer toutes les compositions"             */
+/* (block-editor-block-patterns-explorer, WP 7.1)                      */
+/* ------------------------------------------------------------------ */
+.waw-style-picker {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 24px;
+}
+
+.waw-style-picker__sidebar {
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+}
+
+.waw-style-picker__category.components-button {
+	display: block;
+	width: 100%;
+	height: 48px;
+	text-align: left;
+}
+
+/* Barre au-dessus de la grille : compteur à gauche, options de vue à droite */
+.waw-style-picker__toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 16px;
+	margin-bottom: 16px;
+}
+
+.waw-style-picker__count {
+	margin: 0 auto 0 0;
+}
+
+.waw-style-picker__view-options {
+	width: 240px;
+	padding: 16px;
+}
+
+.waw-style-picker__grid {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 32px;
+	align-items: start;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.waw-style-picker__grid > li {
+	margin: 0;
+}
+
+.waw-style-picker__item {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+.waw-style-picker__item:focus {
+	outline: none;
+}
+
+/*
+ * L'aperçu est rendu dans une iframe : sans pointer-events: none, le clic
+ * serait capté par l'iframe et n'atteindrait jamais le bouton parent.
+ */
+.waw-style-picker__thumb {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	min-height: 160px;
+	padding: 16px;
+	overflow: hidden;
+	border-radius: 4px;
+	background: #fff;
+	pointer-events: none;
+}
+
+.waw-style-picker__thumb .block-editor-block-preview__container {
+	width: 100%;
+}
+
+/* Contour des cartes : mêmes valeurs que les compositions natives */
+.waw-style-picker__thumb::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: 4px;
+	outline: 1px solid rgba(0, 0, 0, 0.1);
+	outline-offset: -1px;
+}
+
+@media not (prefers-reduced-motion) {
+	.waw-style-picker__thumb::after {
+		transition: outline 0.1s linear;
+	}
+}
+
+.waw-style-picker__item:hover .waw-style-picker__thumb::after {
+	outline-color: rgba(0, 0, 0, 0.3);
+}
+
+.waw-style-picker__item.is-selected .waw-style-picker__thumb::after {
+	outline: var(--wp-admin-border-width-focus, 1.5px) solid #1e1e1e;
+	outline-offset: calc(-1 * var(--wp-admin-border-width-focus, 1.5px));
+}
+
+.waw-style-picker__item:focus-visible .waw-style-picker__thumb::after {
+	outline: var(--wp-admin-border-width-focus, 1.5px) solid var(--wp-admin-theme-color);
+	outline-offset: calc(-1 * var(--wp-admin-border-width-focus, 1.5px));
+}
+
+.waw-style-picker__title {
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+@media (min-width: 782px) {
+	.waw-style-picker {
+		grid-template-columns: 232px 1fr;
+		gap: 48px;
+	}
+
+	.waw-style-picker__sidebar {
+		position: sticky;
+		top: 0;
+		align-self: start;
+	}
+
+	/* Nombre de colonnes choisi par l'utilisateur (1 à 3), 1 sur mobile */
+	.waw-style-picker__grid {
+		grid-template-columns: repeat(var(--waw-style-picker-columns, 2), minmax(0, 1fr));
+	}
+}

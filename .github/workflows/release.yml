@@ -1,0 +1,42 @@
+name: Release
+
+# Déclenchée par le push d'un tag vX.Y.Z (créé par `npm version`).
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Vérifier la cohérence des versions
+        run: npm run release:check -- "${GITHUB_REF_NAME}"
+
+      - name: Compiler
+        run: npm run build
+
+      - name: Construire le zip
+        run: |
+          npm run plugin-zip
+          mv waw-style-picker.zip "waw-style-picker-${GITHUB_REF_NAME#v}.zip"
+
+      - name: Publier la release GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body_path: release-notes.md
+          files: waw-style-picker-*.zip
