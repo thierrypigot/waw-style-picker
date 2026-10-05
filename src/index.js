@@ -44,6 +44,8 @@ const config = {
 	minStyles: 4,
 	excludedBlocks: [],
 	scopes: {},
+	hidden: {},
+	rootOnly: {},
 	patternStyles: {},
 	patternDefaults: {},
 	...window.wawStylePicker,
@@ -83,11 +85,19 @@ const getStyleCategory = ( blockName, style ) =>
  * - Composition qui limite ses styles (waw_style_picker_restrict_pattern_styles) :
  *   seuls ses styles autorisés sont proposés.
  */
-const getAvailableStyles = ( blockName, styles, patternName, activeStyle ) => {
+const getAvailableStyles = ( blockName, styles, patternName, activeStyle, isRoot ) => {
 	const allowed = patternName ? config.patternStyles[ patternName ] : undefined;
 	return styles.filter( ( style ) => {
 		if ( style.isDefault || style.name === activeStyle ) {
 			return true;
+		}
+		// Style technique (clé PHP 'pickable' => false) : jamais proposé.
+		if ( config.hidden[ blockName ]?.includes( style.name ) ) {
+			return false;
+		}
+		// Style de section (clé PHP 'root_only') : premier niveau seulement.
+		if ( ! isRoot && config.rootOnly[ blockName ]?.includes( style.name ) ) {
+			return false;
 		}
 		const scope = config.scopes[ blockName ]?.[ style.name ];
 		if ( scope && ! scope.includes( patternName ) ) {
@@ -102,6 +112,8 @@ const getAvailableStyles = ( blockName, styles, patternName, activeStyle ) => {
 // donc dès qu'une restriction concerne le bloc, quel que soit le seuil.
 const hasRestriction = ( blockName, patternName ) =>
 	Object.keys( config.scopes[ blockName ] || {} ).length > 0 ||
+	( config.hidden[ blockName ] || [] ).length > 0 ||
+	( config.rootOnly[ blockName ] || [] ).length > 0 ||
 	!! ( patternName && config.patternStyles[ patternName ] );
 
 /*
@@ -129,6 +141,18 @@ const withPatternDefault = ( styles, registeredStyles, patternName ) => {
 		...styles.filter( ( s ) => ! s.isDefault && s.name !== applies ),
 	];
 };
+
+/*
+ * Bouton natif « Styles aléatoires » (goutte) des racines de composition : il
+ * fait défiler tous les styles du type de bloc, restrictions ignorées, et
+ * WordPress ne permet pas de le filtrer bloc par bloc. Tant qu'un bloc géré
+ * par l'extension est sélectionné, une classe sur <body> le masque (editor.css).
+ * Plusieurs blocs peuvent se relayer : on compte les blocs concernés.
+ */
+const ACTIVE_CLASS = 'waw-style-picker-active';
+const activeBlocks = new Set();
+const syncBodyClass = () =>
+	document.body.classList.toggle( ACTIVE_CLASS, activeBlocks.size > 0 );
 
 const isPickerEnabled = ( blockName, stylesCount, patternName ) =>
 	stylesCount > 0 &&
@@ -412,7 +436,7 @@ function StylePanel( { activeLabel, onOpen, className = '' } ) {
 					{ __( 'Choisir un style', 'waw-style-picker' ) }
 				</Button>
 			) : (
-				<p>{ __( 'Cette composition n’a qu’un style.', 'waw-style-picker' ) }</p>
+				<p>{ __( 'Aucun autre style n’est proposé pour ce bloc ici.', 'waw-style-picker' ) }</p>
 			) }
 		</PanelBody>
 	);
@@ -496,6 +520,12 @@ const withStylePicker = createHigherOrderComponent( ( BlockEdit ) => {
 		);
 		const activeStyle = getActiveStyle( attributes.className );
 		const patternName = attributes.metadata?.patternName;
+		// Premier niveau : pas de bloc parent dans l'arbre édité (contenu de la
+		// page, ou partie de modèle ouverte seule).
+		const isRoot = useSelect(
+			( select ) => ! select( blockEditorStore ).getBlockRootClientId( clientId ),
+			[ clientId ]
+		);
 		const styles = useMemo(
 			() =>
 				registeredStyles?.length
@@ -504,13 +534,14 @@ const withStylePicker = createHigherOrderComponent( ( BlockEdit ) => {
 							name,
 							withDefaultStyle( registeredStyles ),
 							patternName,
-							activeStyle
+							activeStyle,
+							isRoot
 						),
 						registeredStyles,
 						patternName
 					)
 					: [],
-			[ registeredStyles, name, patternName, activeStyle ]
+			[ registeredStyles, name, patternName, activeStyle, isRoot ]
 		);
 
 		// Lu seulement quand la modale est ouverte : inutile de suivre
@@ -536,6 +567,18 @@ const withStylePicker = createHigherOrderComponent( ( BlockEdit ) => {
 			'default' === editingMode &&
 			isPickerEnabled( name, registeredStyles?.length || 0, patternName );
 		const fallbackHost = useNativeStylesFallbackHost( enabled && isSelected );
+
+		useEffect( () => {
+			if ( ! enabled || ! isSelected ) {
+				return;
+			}
+			activeBlocks.add( clientId );
+			syncBodyClass();
+			return () => {
+				activeBlocks.delete( clientId );
+				syncBodyClass();
+			};
+		}, [ enabled, isSelected, clientId ] );
 
 		if ( ! enabled ) {
 			return <BlockEdit { ...props } />;

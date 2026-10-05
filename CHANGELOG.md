@@ -6,13 +6,19 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), num
 
 ## [Non publié]
 
+### Ajouté
+
+- Clé `pickable` de `register_block_style()` : `false` pour un style technique, posé dans le code et jamais proposé (il reste affiché s'il est déjà appliqué).
+- Clé `root_only` : style proposé seulement sur un bloc de premier niveau (une section de page), jamais sur un bloc imbriqué, y compris dans « Modifier la composition ».
+
 ### Modifié
 
 - « Par défaut » sur la racine d'une composition restreinte désigne la composition telle qu'insérée : il applique son style livré (lu dans le contenu de la composition, ou imposé par la nouvelle option `default` de `waw_style_picker_restrict_pattern_styles()`) et s'affiche « Par défaut (Section bleue) ». L'absence de style n'est plus proposée sur ces compositions.
-- Composition à un seul style : plus de bouton « Style », le panneau indique que la composition n'a qu'un style.
+- Bloc sans autre style à proposer : plus de bouton « Style », le panneau l'indique (et masque toujours le sélecteur natif, qui proposerait tout).
 
 ### Corrigé
 
+- Bouton natif « Styles aléatoires » (goutte) masqué sur les blocs gérés par l'extension : il faisait défiler tous les styles, restrictions ignorées (un bandeau pouvait passer en « Photo de CTA »).
 - Plus de bouton « Style » sur les blocs intérieurs d'une composition verrouillée (mode d'édition `contentOnly` ou `disabled`) : comme dans WordPress, seule la racine se configure. Une tuile aux textes colorés ne peut plus prendre un fond de la même couleur.
 
 ## [0.1.1] - 2026-10-05

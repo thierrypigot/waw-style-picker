@@ -12,6 +12,12 @@
  * 3. En JS : registerBlockStyle( 'core/group', { name, label, category: 'cartes' } ).
  * Un style non classé tombe dans la catégorie par défaut « Autres ».
  *
+ * Où proposer un style (clés de register_block_style(), relayées à l'éditeur) :
+ * - 'pickable' => false : style technique, posé dans le code, jamais proposé
+ *   (il reste affiché s'il est déjà appliqué) ;
+ * - 'root_only' => true : proposé seulement sur un bloc de premier niveau
+ *   (une section de page), jamais sur un bloc imbriqué.
+ *
  * Restreindre les styles selon la composition (metadata.patternName du bloc,
  * posé par WordPress sur la racine d'une composition insérée) :
  * - register_block_style( 'core/group', array( …, 'patterns' => array( 'mon-theme/chiffres' ) ) ) :
@@ -145,14 +151,22 @@ function waw_style_picker_get_config() {
 	$store       = waw_style_picker_store();
 	$assignments = array();
 	$scopes      = array();
+	$hidden      = array();
+	$root_only   = array();
 
-	// Clés 'category' et 'patterns' passées à register_block_style() :
+	// Clés 'category', 'patterns', 'pickable' et 'root_only' passées à register_block_style() :
 	// WordPress les conserve dans le registre mais ne les transmet pas au JS.
 	// On les relaie.
 	foreach ( WP_Block_Styles_Registry::get_instance()->get_all_registered() as $block_name => $styles ) {
 		foreach ( $styles as $style_name => $style ) {
 			if ( ! empty( $style['category'] ) ) {
 				$assignments[ $block_name ][ $style_name ] = sanitize_key( $style['category'] );
+			}
+			if ( isset( $style['pickable'] ) && false === $style['pickable'] ) {
+				$hidden[ $block_name ][] = $style_name;
+			}
+			if ( ! empty( $style['root_only'] ) ) {
+				$root_only[ $block_name ][] = $style_name;
 			}
 			if ( ! empty( $style['patterns'] ) && is_array( $style['patterns'] ) ) {
 				$scopes[ $block_name ][ $style_name ] = array_values(
@@ -189,6 +203,10 @@ function waw_style_picker_get_config() {
 		'assignments'     => $assignments,
 		/** Style => compositions où il est proposé (clé 'patterns'). */
 		'scopes'          => $scopes,
+		/** Bloc => styles jamais proposés (clé 'pickable' => false). */
+		'hidden'          => $hidden,
+		/** Bloc => styles proposés seulement au premier niveau (clé 'root_only'). */
+		'rootOnly'        => $root_only,
 		'patternStyles'   => $pattern_styles,
 		/** Composition => style appliqué par « Par défaut » ('' : aucun). */
 		'patternDefaults' => $pattern_defaults,

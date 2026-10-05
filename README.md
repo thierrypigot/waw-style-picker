@@ -104,6 +104,25 @@ wp.blocks.registerBlockStyle( 'core/group', {
 } );
 ```
 
+## Où proposer un style
+
+WordPress propose un style partout où son type de bloc apparaît. Deux clés de `register_block_style()` le limitent (ignorées sans l'extension) :
+
+| Clé | Effet | Exemple |
+|---|---|---|
+| `'pickable' => false` | Style technique, posé dans le code d'un gabarit ou d'une composition, jamais proposé. S'il est déjà appliqué, il reste affiché | Mise en page interne de l'en-tête |
+| `'root_only' => true` | Proposé seulement sur un bloc de premier niveau (une section de la page), jamais sur un bloc imbriqué | Couleurs de section, qui n'ont pas de sens sur une tuile ou une colonne |
+
+```php
+register_block_style( 'core/group', array(
+	'name'      => 'section-rouge',
+	'label'     => __( 'Section rouge', 'mon-theme' ),
+	'root_only' => true,
+) );
+```
+
+Un bloc qui n'a plus aucun style à proposer n'affiche pas de bouton « Style » ; le sélecteur natif reste masqué, puisqu'il ignorerait ces règles.
+
 ## Restreindre les styles selon la composition
 
 Les styles d'un bloc s'enregistrent par type de bloc : un groupe propose tous les styles de groupe, qu'il soit une section, une grille de chiffres ou une barre de navigation. L'extension peut limiter la liste selon la composition dont le bloc est la racine. Elle lit `metadata.patternName`, que WordPress pose sur la racine d'une composition insérée (on peut aussi l'écrire dans le fichier de la composition).
@@ -161,7 +180,7 @@ add_filter( 'waw_style_picker_excluded_blocks', fn( $blocks ) => array_merge( $b
 ## Limites connues
 
 - **Classes internes du core.** Le masquage du sélecteur natif et le panneau des compositions non ouvertes s'appuient sur les classes `.block-editor-block-styles` et `.components-tools-panel`, qui ne font pas partie d'une API publique. Si WordPress les modifie, l'extension retombe sur le sélecteur natif, sans casse. Le bouton de la barre d'outils continue de fonctionner.
-- **Bouton goutte des sections.** Sur une composition non ouverte, WordPress affiche son propre bouton qui fait défiler les styles un par un. Il cohabite avec le bouton « Style » et ignore les restrictions par composition.
+- **Bouton goutte des sections.** Le bouton natif « Styles aléatoires » des compositions ignorerait les restrictions : il est masqué tant qu'un bloc géré par l'extension est sélectionné. Faute de classe propre, il est repéré par le tracé de son icône ; si WordPress change ce tracé, le bouton réapparaît sans rien casser.
 - **Restriction par composition.** Elle ne vaut que pour la racine de la composition (seul bloc qui porte `metadata.patternName`) et suppose que ce nom soit présent : un balisage inséré sans passer par l'outil d'insertion (import, collage de code) ne l'a pas, sauf si le fichier de la composition l'écrit.
 
 ## Développement
