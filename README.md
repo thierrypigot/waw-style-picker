@@ -48,7 +48,7 @@ L'extension ne crée aucun style. Elle se contente de présenter autrement les s
 | Situation | Comportement |
 |---|---|
 | Bloc avec au moins 4 styles, « Par défaut » natif compris | La modale remplace le sélecteur natif |
-| Bloc avec moins de 4 styles | Le sélecteur natif est conservé, il reste plus rapide |
+| Bloc avec moins de 4 styles | Le sélecteur natif est conservé, il reste plus rapide, sauf si une restriction par composition concerne le bloc |
 | Style non classé | Rangé dans la catégorie « Autres », affichée en dernier |
 | Racine d'une composition non ouverte | Bouton « Style » dans la barre d'outils et panneau dans l'inspecteur |
 

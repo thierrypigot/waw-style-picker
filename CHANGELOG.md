@@ -8,7 +8,7 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), num
 
 ### Ajouté
 
-- Styles restreints selon la composition, lue dans `metadata.patternName` (posé par WordPress sur la racine d'une composition insérée) : clé `patterns` dans `register_block_style()` pour ne proposer un style que sur certaines compositions, fonction `waw_style_picker_restrict_pattern_styles()` et filtre `waw_style_picker_pattern_styles` pour limiter les styles proposés sur la racine d'une composition. « Par défaut » et le style déjà appliqué restent toujours proposés.
+- Styles restreints selon la composition, lue dans `metadata.patternName` (posé par WordPress sur la racine d'une composition insérée) : clé `patterns` dans `register_block_style()` pour ne proposer un style que sur certaines compositions, fonction `waw_style_picker_restrict_pattern_styles()` et filtre `waw_style_picker_pattern_styles` pour limiter les styles proposés sur la racine d'une composition. « Par défaut » et le style déjà appliqué restent toujours proposés. Dès qu'une restriction concerne un bloc, la modale remplace le sélecteur natif même sous le seuil `waw_style_picker_min_styles`, le natif ignorant les restrictions.
 
 ## [0.1.0] - 2026-09-24
 

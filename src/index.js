@@ -96,8 +96,16 @@ const getAvailableStyles = ( blockName, styles, patternName, activeStyle ) => {
 	} );
 };
 
-const isPickerEnabled = ( blockName, stylesCount ) =>
-	stylesCount >= config.minStyles &&
+// Une restriction (style réservé ou composition limitée) n'existe que dans la
+// modale : le sélecteur natif proposerait tous les styles. La modale s'active
+// donc dès qu'une restriction concerne le bloc, quel que soit le seuil.
+const hasRestriction = ( blockName, patternName ) =>
+	Object.keys( config.scopes[ blockName ] || {} ).length > 0 ||
+	!! ( patternName && config.patternStyles[ patternName ] );
+
+const isPickerEnabled = ( blockName, stylesCount, patternName ) =>
+	stylesCount > 0 &&
+	( stylesCount >= config.minStyles || hasRestriction( blockName, patternName ) ) &&
 	! config.excludedBlocks.includes( blockName );
 
 /* ------------------------------------------------------------------ */
@@ -472,8 +480,8 @@ const withStylePicker = createHigherOrderComponent( ( BlockEdit ) => {
 
 		// Seuil calculé sur les styles enregistrés, pas sur ceux proposés : une
 		// restriction ne doit pas rendre la main au sélecteur natif, qui les
-		// afficherait tous.
-		const enabled = isPickerEnabled( name, registeredStyles?.length || 0 );
+		// afficherait tous (voir hasRestriction).
+		const enabled = isPickerEnabled( name, registeredStyles?.length || 0, patternName );
 		const fallbackHost = useNativeStylesFallbackHost( enabled && isSelected );
 
 		if ( ! enabled ) {
