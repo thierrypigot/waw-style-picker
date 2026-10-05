@@ -1,6 +1,6 @@
 {
   "name": "waw-style-picker",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Remplace la rangée de boutons des styles de blocs par une modale catégorisée avec aperçus.",
   "author": "WeAre[WP] <contact@wearewp.pro>",

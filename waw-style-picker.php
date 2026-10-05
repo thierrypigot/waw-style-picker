@@ -3,7 +3,7 @@
  * Plugin Name:       WAW : sélecteur de styles de blocs
  * Plugin URI:        https://www.wearewp.pro/
  * Description:       Remplace la rangée de boutons des styles de blocs par une modale catégorisée, avec aperçu réel de chaque style, recherche et catégories déclarables par le thème.
- * Version:           0.1.0
+ * Version:           0.1.1
  * Requires at least: 7.1
  * Requires PHP:      8.1
  * Author:            WeAre[WP]

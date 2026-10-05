@@ -6,6 +6,8 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), num
 
 ## [Non publié]
 
+## [0.1.1] - 2026-10-05
+
 ### Ajouté
 
 - Styles restreints selon la composition, lue dans `metadata.patternName` (posé par WordPress sur la racine d'une composition insérée) : clé `patterns` dans `register_block_style()` pour ne proposer un style que sur certaines compositions, fonction `waw_style_picker_restrict_pattern_styles()` et filtre `waw_style_picker_pattern_styles` pour limiter les styles proposés sur la racine d'une composition. « Par défaut » et le style déjà appliqué restent toujours proposés. Dès qu'une restriction concerne un bloc, la modale remplace le sélecteur natif même sous le seuil `waw_style_picker_min_styles`, le natif ignorant les restrictions.
@@ -23,5 +25,6 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), num
 - Activation automatique sur tout bloc ayant au moins 4 styles, filtres `waw_style_picker_min_styles` et `waw_style_picker_excluded_blocks`.
 - API PHP de catégories : `waw_style_picker_register_category()`, `waw_style_picker_assign_styles()`, clé `category` dans `register_block_style()`, filtre `waw_style_picker_config`.
 
-[Non publié]: https://github.com/thierrypigot/waw-style-picker/compare/v0.1.0...HEAD
+[Non publié]: https://github.com/thierrypigot/waw-style-picker/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/thierrypigot/waw-style-picker/releases/tag/v0.1.1
 [0.1.0]: https://github.com/thierrypigot/waw-style-picker/releases/tag/v0.1.0
