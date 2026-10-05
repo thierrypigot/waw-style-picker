@@ -6,6 +6,15 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), num
 
 ## [Non publié]
 
+### Modifié
+
+- « Par défaut » sur la racine d'une composition restreinte désigne la composition telle qu'insérée : il applique son style livré (lu dans le contenu de la composition, ou imposé par la nouvelle option `default` de `waw_style_picker_restrict_pattern_styles()`) et s'affiche « Par défaut (Section bleue) ». L'absence de style n'est plus proposée sur ces compositions.
+- Composition à un seul style : plus de bouton « Style », le panneau indique que la composition n'a qu'un style.
+
+### Corrigé
+
+- Plus de bouton « Style » sur les blocs intérieurs d'une composition verrouillée (mode d'édition `contentOnly` ou `disabled`) : comme dans WordPress, seule la racine se configure. Une tuile aux textes colorés ne peut plus prendre un fond de la même couleur.
+
 ## [0.1.1] - 2026-10-05
 
 ### Ajouté

@@ -18,6 +18,8 @@
  *   le style n'est proposé que sur la racine de ces compositions ;
  * - waw_style_picker_restrict_pattern_styles( 'mon-theme/chiffres', array( 'tuiles' ) ) :
  *   la racine de cette composition ne propose que ces styles, plus « Par défaut ».
+ *   « Par défaut » y désigne la composition telle qu'insérée : son style livré
+ *   (lu dans son contenu, ou imposé par l'option 'default'), pas l'absence de style.
  *
  * @package WAW\StylePicker
  */
@@ -31,9 +33,10 @@ defined( 'ABSPATH' ) || exit;
  */
 function &waw_style_picker_store() {
 	static $store = array(
-		'categories'     => array(),
-		'assignments'    => array(),
-		'pattern_styles' => array(),
+		'categories'      => array(),
+		'assignments'     => array(),
+		'pattern_styles'  => array(),
+		'pattern_default' => array(),
 	);
 	return $store;
 }
@@ -77,20 +80,50 @@ function waw_style_picker_assign_styles( $block_name, array $map ) {
 /**
  * Limite les styles proposés sur la racine d'une composition.
  *
- * « Par défaut » reste toujours proposé, ainsi que le style déjà appliqué au
- * bloc, pour pouvoir le retirer.
+ * « Par défaut » reste toujours proposé : il remet la composition telle
+ * qu'insérée, avec son style livré (« Par défaut (Section bleue) »). Le style
+ * déjà appliqué au bloc reste aussi visible, pour pouvoir le changer.
  *
  * @param string   $pattern_name Nom de la composition, ex. 'mon-theme/chiffres'.
  * @param string[] $styles       Noms des styles autorisés.
+ * @param array    $args {
+ *     Options.
+ *
+ *     @type string $default Style appliqué par « Par défaut » ('' : aucun style).
+ *                           Par défaut : le style de la racine dans le contenu
+ *                           de la composition.
+ * }
  * @return bool False si le nom de composition est invalide.
  */
-function waw_style_picker_restrict_pattern_styles( $pattern_name, array $styles ) {
+function waw_style_picker_restrict_pattern_styles( $pattern_name, array $styles, array $args = array() ) {
 	if ( ! waw_style_picker_is_valid_name( $pattern_name ) ) {
 		return false;
 	}
 	$store                                    = &waw_style_picker_store();
 	$store['pattern_styles'][ $pattern_name ] = array_values( array_map( 'sanitize_key', $styles ) );
+	if ( array_key_exists( 'default', $args ) ) {
+		$store['pattern_default'][ $pattern_name ] = sanitize_key( (string) $args['default'] );
+	}
 	return true;
+}
+
+/**
+ * Style livré par une composition : celui de son bloc racine ('' si aucun).
+ *
+ * @param string $pattern_name Nom de la composition.
+ * @return string
+ */
+function waw_style_picker_pattern_root_style( $pattern_name ) {
+	$pattern = WP_Block_Patterns_Registry::get_instance()->get_registered( $pattern_name );
+	if ( empty( $pattern['content'] ) ) {
+		return '';
+	}
+	foreach ( parse_blocks( $pattern['content'] ) as $block ) {
+		if ( ! empty( $block['blockName'] ) ) {
+			return preg_match( '/(?:^|\s)is-style-([^\s]+)/', (string) ( $block['attrs']['className'] ?? '' ), $m ) ? sanitize_key( $m[1] ) : '';
+		}
+	}
+	return '';
 }
 
 /**
@@ -140,25 +173,33 @@ function waw_style_picker_get_config() {
 		);
 	}
 
+	/**
+	 * Composition => styles proposés sur sa racine.
+	 *
+	 * @param array<string, string[]> $pattern_styles Nom de composition => noms de styles.
+	 */
+	$pattern_styles   = (array) apply_filters( 'waw_style_picker_pattern_styles', $store['pattern_styles'] );
+	$pattern_defaults = array();
+	foreach ( array_keys( $pattern_styles ) as $pattern_name ) {
+		$pattern_defaults[ $pattern_name ] = $store['pattern_default'][ $pattern_name ] ?? waw_style_picker_pattern_root_style( $pattern_name );
+	}
+
 	$config = array(
-		'categories'     => $categories,
-		'assignments'    => $assignments,
+		'categories'      => $categories,
+		'assignments'     => $assignments,
 		/** Style => compositions où il est proposé (clé 'patterns'). */
-		'scopes'         => $scopes,
-		/**
-		 * Composition => styles proposés sur sa racine.
-		 *
-		 * @param array<string, string[]> $pattern_styles Nom de composition => noms de styles.
-		 */
-		'patternStyles'  => (array) apply_filters( 'waw_style_picker_pattern_styles', $store['pattern_styles'] ),
+		'scopes'          => $scopes,
+		'patternStyles'   => $pattern_styles,
+		/** Composition => style appliqué par « Par défaut » ('' : aucun). */
+		'patternDefaults' => $pattern_defaults,
 		/**
 		 * Nombre minimal de styles (style par défaut natif compris) à partir
 		 * duquel la modale remplace le sélecteur natif. En dessous, les
 		 * boutons natifs restent plus rapides.
 		 */
-		'minStyles'      => (int) apply_filters( 'waw_style_picker_min_styles', 4 ),
+		'minStyles'       => (int) apply_filters( 'waw_style_picker_min_styles', 4 ),
 		/** Blocs qui gardent toujours le sélecteur natif. */
-		'excludedBlocks' => array_values( (array) apply_filters( 'waw_style_picker_excluded_blocks', array() ) ),
+		'excludedBlocks'  => array_values( (array) apply_filters( 'waw_style_picker_excluded_blocks', array() ) ),
 	);
 
 	/**

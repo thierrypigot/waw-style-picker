@@ -130,7 +130,19 @@ add_action( 'init', function () {
 } );
 ```
 
-La racine de `mon-theme/chiffres` ne propose alors que « Par défaut » et « Tuiles ». Le style déjà appliqué au bloc reste toujours visible, pour pouvoir le retirer. Même réglage par le filtre `waw_style_picker_pattern_styles`.
+La racine de `mon-theme/chiffres` ne propose alors que « Par défaut » et « Tuiles ». Le style déjà appliqué au bloc reste toujours visible, pour pouvoir le changer. Même réglage par le filtre `waw_style_picker_pattern_styles`.
+
+### « Par défaut » = la composition telle qu'insérée
+
+Sur une composition restreinte, « Par défaut » n'est pas l'absence de style : c'est la composition dans sa configuration de base, avec le style que porte sa racine dans son contenu. Une composition livrée en « Section bleue » propose « Par défaut (Section bleue) », puis ses autres styles ; l'absence de style, souvent sans sens pour elle, n'est plus proposée. Une composition sans style livré garde le « Par défaut » habituel.
+
+Pour imposer un autre style de base (ou aucun : `''`) :
+
+```php
+waw_style_picker_restrict_pattern_styles( 'mon-theme/cta', array( 'bleu', 'rouge' ), array( 'default' => 'bleu' ) );
+```
+
+Une composition qui n'a qu'un style n'affiche plus de bouton « Style ».
 
 ## Filtres
 

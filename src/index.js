@@ -45,6 +45,7 @@ const config = {
 	excludedBlocks: [],
 	scopes: {},
 	patternStyles: {},
+	patternDefaults: {},
 	...window.wawStylePicker,
 };
 
@@ -103,6 +104,32 @@ const hasRestriction = ( blockName, patternName ) =>
 	Object.keys( config.scopes[ blockName ] || {} ).length > 0 ||
 	!! ( patternName && config.patternStyles[ patternName ] );
 
+/*
+ * « Par défaut » d'une composition restreinte = la composition telle
+ * qu'insérée, avec son style livré (config.patternDefaults, lu dans son
+ * contenu côté PHP), pas l'absence de style. Comme une voiture livrée dans sa
+ * configuration de base : on part d'elle, puis on choisit les options.
+ * Le choix « Par défaut (Section bleue) » applique donc ce style, qui n'est
+ * pas répété dans la liste.
+ */
+const withPatternDefault = ( styles, registeredStyles, patternName ) => {
+	const applies = patternName ? config.patternDefaults[ patternName ] : '';
+	const source = applies && registeredStyles.find( ( s ) => s.name === applies );
+	if ( ! source ) {
+		return styles;
+	}
+	return [
+		{
+			name: applies,
+			/* translators: %s: libellé du style livré par la composition. */
+			label: sprintf( __( 'Par défaut (%s)', 'waw-style-picker' ), source.label ),
+			isDefault: true,
+			appliesStyle: applies,
+		},
+		...styles.filter( ( s ) => ! s.isDefault && s.name !== applies ),
+	];
+};
+
 const isPickerEnabled = ( blockName, stylesCount, patternName ) =>
 	stylesCount > 0 &&
 	( stylesCount >= config.minStyles || hasRestriction( blockName, patternName ) ) &&
@@ -141,8 +168,16 @@ const withDefaultStyle = ( styles ) => {
 };
 
 // Pas de classe is-style-* : c'est le style par défaut qui est actif.
-const isStyleActive = ( style, activeStyle ) =>
-	style.isDefault ? ! activeStyle || activeStyle === style.name : style.name === activeStyle;
+const isStyleActive = ( style, activeStyle ) => {
+	if ( style.appliesStyle ) {
+		return activeStyle === style.appliesStyle;
+	}
+	return style.isDefault ? ! activeStyle || activeStyle === style.name : style.name === activeStyle;
+};
+
+// Classe à poser pour un choix : aucune pour le « Par défaut » natif, le style
+// livré pour le « Par défaut » d'une composition.
+const styleNameOf = ( style ) => style.appliesStyle || ( style.isDefault ? null : style.name );
 
 /* ------------------------------------------------------------------ */
 /* Aperçu : le bloc sélectionné, cloné avec la classe du style          */
@@ -338,12 +373,12 @@ function StylePickerModal( { block, styles, activeStyle, onSelect, onClose } ) {
 										type="button"
 										className={ 'waw-style-picker__item' + ( isActive ? ' is-selected' : '' ) }
 										aria-pressed={ isActive }
-										onClick={ () => onSelect( style.isDefault ? null : style.name ) }
+										onClick={ () => onSelect( styleNameOf( style ) ) }
 									>
 										<span className="waw-style-picker__thumb" aria-hidden="true">
 											<StylePreview
 												block={ block }
-												styleName={ style.isDefault ? null : style.name }
+												styleName={ styleNameOf( style ) }
 												viewportWidth={ PREVIEW_VIEWPORTS[ columns ] }
 											/>
 										</span>
@@ -372,9 +407,13 @@ function StylePanel( { activeLabel, onOpen, className = '' } ) {
 			) }
 			className={ `waw-style-picker-panel ${ className }`.trim() }
 		>
-			<Button variant="secondary" onClick={ onOpen }>
-				{ __( 'Choisir un style', 'waw-style-picker' ) }
-			</Button>
+			{ onOpen ? (
+				<Button variant="secondary" onClick={ onOpen }>
+					{ __( 'Choisir un style', 'waw-style-picker' ) }
+				</Button>
+			) : (
+				<p>{ __( 'Cette composition n’a qu’un style.', 'waw-style-picker' ) }</p>
+			) }
 		</PanelBody>
 	);
 }
@@ -460,11 +499,15 @@ const withStylePicker = createHigherOrderComponent( ( BlockEdit ) => {
 		const styles = useMemo(
 			() =>
 				registeredStyles?.length
-					? getAvailableStyles(
-						name,
-						withDefaultStyle( registeredStyles ),
-						patternName,
-						activeStyle
+					? withPatternDefault(
+						getAvailableStyles(
+							name,
+							withDefaultStyle( registeredStyles ),
+							patternName,
+							activeStyle
+						),
+						registeredStyles,
+						patternName
 					)
 					: [],
 			[ registeredStyles, name, patternName, activeStyle ]
@@ -481,7 +524,17 @@ const withStylePicker = createHigherOrderComponent( ( BlockEdit ) => {
 		// Seuil calculé sur les styles enregistrés, pas sur ceux proposés : une
 		// restriction ne doit pas rendre la main au sélecteur natif, qui les
 		// afficherait tous (voir hasRestriction).
-		const enabled = isPickerEnabled( name, registeredStyles?.length || 0, patternName );
+		// Bloc à l'intérieur d'une composition verrouillée (contentOnly) : mode
+		// d'édition « contentOnly » ou « disabled », seul le contenu s'y modifie.
+		// WordPress n'y propose aucun style ; on ne le fait pas non plus, sinon
+		// une tuile aux textes colorés pourrait prendre un fond de même couleur.
+		const editingMode = useSelect(
+			( select ) => select( blockEditorStore ).getBlockEditingMode( clientId ),
+			[ clientId ]
+		);
+		const enabled =
+			'default' === editingMode &&
+			isPickerEnabled( name, registeredStyles?.length || 0, patternName );
 		const fallbackHost = useNativeStylesFallbackHost( enabled && isSelected );
 
 		if ( ! enabled ) {
@@ -491,13 +544,17 @@ const withStylePicker = createHigherOrderComponent( ( BlockEdit ) => {
 		// Une classe is-style-* inconnue (style désenregistré) retombe aussi
 		// sur le libellé du style par défaut.
 		const activeLabel = (
-			styles.find( ( s ) => ! s.isDefault && s.name === activeStyle ) || styles[ 0 ]
+			styles.find( ( s ) => isStyleActive( s, activeStyle ) ) || styles[ 0 ]
 		).label;
+		// Un seul choix (composition au style imposé) : rien à ouvrir, mais le
+		// panneau reste affiché pour masquer le sélecteur natif.
+		const canChoose = styles.length > 1;
+		const open = canChoose ? () => setOpen( true ) : null;
 
 		return (
 			<>
 				<BlockEdit { ...props } />
-				{ isSelected && (
+				{ isSelected && canChoose && (
 					/*
 					 * Barre d'outils : seul accès possible sur la racine d'une
 					 * composition non ouverte (section). WP 7.1 y masque les
@@ -523,7 +580,7 @@ const withStylePicker = createHigherOrderComponent( ( BlockEdit ) => {
 				) }
 				{ isSelected && (
 					<InspectorControls group="styles">
-						<StylePanel activeLabel={ activeLabel } onOpen={ () => setOpen( true ) } />
+						<StylePanel activeLabel={ activeLabel } onOpen={ open } />
 					</InspectorControls>
 				) }
 				{ isSelected &&
@@ -531,7 +588,7 @@ const withStylePicker = createHigherOrderComponent( ( BlockEdit ) => {
 					createPortal(
 						<StylePanel
 							activeLabel={ activeLabel }
-							onOpen={ () => setOpen( true ) }
+							onOpen={ open }
 							className={ FALLBACK_CLASS }
 						/>,
 						fallbackHost
