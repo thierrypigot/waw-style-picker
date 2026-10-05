@@ -4,6 +4,7 @@
  * 2. Injecte un bouton dans l'inspecteur via le filtre editor.BlockEdit,
  *    sur tout bloc qui a assez de styles.
  * 3. Ouvre une modale qui liste les styles regroupés par catégorie.
+ * 4. Restreint les styles proposés selon la composition (metadata.patternName).
  */
 import { __, _n, sprintf } from '@wordpress/i18n';
 import { addFilter } from '@wordpress/hooks';
@@ -42,6 +43,8 @@ const config = {
 	assignments: {},
 	minStyles: 4,
 	excludedBlocks: [],
+	scopes: {},
+	patternStyles: {},
 	...window.wawStylePicker,
 };
 
@@ -70,6 +73,28 @@ const getStyleCategory = ( blockName, style ) =>
 	config.assignments[ blockName ]?.[ style.name ] ||
 	style.category ||
 	DEFAULT_CATEGORY;
+
+/*
+ * Styles proposés sur ce bloc précis. La composition est lue dans
+ * metadata.patternName, que WordPress pose sur la racine d'une composition
+ * insérée. « Par défaut » et le style déjà appliqué restent toujours proposés.
+ * - Style limité à des compositions (clé PHP 'patterns') : masqué ailleurs.
+ * - Composition qui limite ses styles (waw_style_picker_restrict_pattern_styles) :
+ *   seuls ses styles autorisés sont proposés.
+ */
+const getAvailableStyles = ( blockName, styles, patternName, activeStyle ) => {
+	const allowed = patternName ? config.patternStyles[ patternName ] : undefined;
+	return styles.filter( ( style ) => {
+		if ( style.isDefault || style.name === activeStyle ) {
+			return true;
+		}
+		const scope = config.scopes[ blockName ]?.[ style.name ];
+		if ( scope && ! scope.includes( patternName ) ) {
+			return false;
+		}
+		return ! allowed || allowed.includes( style.name );
+	} );
+};
 
 const isPickerEnabled = ( blockName, stylesCount ) =>
 	stylesCount >= config.minStyles &&
@@ -422,9 +447,19 @@ const withStylePicker = createHigherOrderComponent( ( BlockEdit ) => {
 			( select ) => select( blocksStore ).getBlockStyles( name ),
 			[ name ]
 		);
+		const activeStyle = getActiveStyle( attributes.className );
+		const patternName = attributes.metadata?.patternName;
 		const styles = useMemo(
-			() => ( registeredStyles?.length ? withDefaultStyle( registeredStyles ) : [] ),
-			[ registeredStyles ]
+			() =>
+				registeredStyles?.length
+					? getAvailableStyles(
+						name,
+						withDefaultStyle( registeredStyles ),
+						patternName,
+						activeStyle
+					)
+					: [],
+			[ registeredStyles, name, patternName, activeStyle ]
 		);
 
 		// Lu seulement quand la modale est ouverte : inutile de suivre
@@ -435,6 +470,9 @@ const withStylePicker = createHigherOrderComponent( ( BlockEdit ) => {
 			[ isOpen, clientId ]
 		);
 
+		// Seuil calculé sur les styles enregistrés, pas sur ceux proposés : une
+		// restriction ne doit pas rendre la main au sélecteur natif, qui les
+		// afficherait tous.
 		const enabled = isPickerEnabled( name, registeredStyles?.length || 0 );
 		const fallbackHost = useNativeStylesFallbackHost( enabled && isSelected );
 
@@ -442,7 +480,6 @@ const withStylePicker = createHigherOrderComponent( ( BlockEdit ) => {
 			return <BlockEdit { ...props } />;
 		}
 
-		const activeStyle = getActiveStyle( attributes.className );
 		// Une classe is-style-* inconnue (style désenregistré) retombe aussi
 		// sur le libellé du style par défaut.
 		const activeLabel = (

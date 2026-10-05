@@ -104,12 +104,41 @@ wp.blocks.registerBlockStyle( 'core/group', {
 } );
 ```
 
+## Restreindre les styles selon la composition
+
+Les styles d'un bloc s'enregistrent par type de bloc : un groupe propose tous les styles de groupe, qu'il soit une section, une grille de chiffres ou une barre de navigation. L'extension peut limiter la liste selon la composition dont le bloc est la racine. Elle lit `metadata.patternName`, que WordPress pose sur la racine d'une composition insérée (on peut aussi l'écrire dans le fichier de la composition).
+
+### Un style réservé à certaines compositions
+
+```php
+register_block_style( 'core/group', array(
+	'name'     => 'tuiles',
+	'label'    => __( 'Tuiles', 'mon-theme' ),
+	'patterns' => array( 'mon-theme/chiffres' ),
+) );
+```
+
+Le style n'est proposé que sur la racine de `mon-theme/chiffres`. Sans l'extension, WordPress ignore la clé `patterns` et propose le style partout.
+
+### Une composition qui limite ses styles
+
+```php
+add_action( 'init', function () {
+	if ( function_exists( 'waw_style_picker_restrict_pattern_styles' ) ) {
+		waw_style_picker_restrict_pattern_styles( 'mon-theme/chiffres', array( 'tuiles' ) );
+	}
+} );
+```
+
+La racine de `mon-theme/chiffres` ne propose alors que « Par défaut » et « Tuiles ». Le style déjà appliqué au bloc reste toujours visible, pour pouvoir le retirer. Même réglage par le filtre `waw_style_picker_pattern_styles`.
+
 ## Filtres
 
 | Filtre | Rôle | Valeur par défaut |
 |---|---|---|
 | `waw_style_picker_min_styles` | Nombre minimal de styles, « Par défaut » natif compris, à partir duquel la modale remplace le sélecteur natif | `4` |
 | `waw_style_picker_excluded_blocks` | Blocs qui gardent toujours le sélecteur natif | `array()` |
+| `waw_style_picker_pattern_styles` | Composition => styles proposés sur sa racine | `array()` |
 | `waw_style_picker_config` | Configuration complète transmise à l'éditeur (`window.wawStylePicker`) | |
 
 ```php
@@ -120,7 +149,8 @@ add_filter( 'waw_style_picker_excluded_blocks', fn( $blocks ) => array_merge( $b
 ## Limites connues
 
 - **Classes internes du core.** Le masquage du sélecteur natif et le panneau des compositions non ouvertes s'appuient sur les classes `.block-editor-block-styles` et `.components-tools-panel`, qui ne font pas partie d'une API publique. Si WordPress les modifie, l'extension retombe sur le sélecteur natif, sans casse. Le bouton de la barre d'outils continue de fonctionner.
-- **Bouton goutte des sections.** Sur une composition non ouverte, WordPress affiche son propre bouton qui fait défiler les styles un par un. Il cohabite avec le bouton « Style ».
+- **Bouton goutte des sections.** Sur une composition non ouverte, WordPress affiche son propre bouton qui fait défiler les styles un par un. Il cohabite avec le bouton « Style » et ignore les restrictions par composition.
+- **Restriction par composition.** Elle ne vaut que pour la racine de la composition (seul bloc qui porte `metadata.patternName`) et suppose que ce nom soit présent : un balisage inséré sans passer par l'outil d'insertion (import, collage de code) ne l'a pas, sauf si le fichier de la composition l'écrit.
 
 ## Développement
 

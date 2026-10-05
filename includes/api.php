@@ -12,6 +12,13 @@
  * 3. En JS : registerBlockStyle( 'core/group', { name, label, category: 'cartes' } ).
  * Un style non classé tombe dans la catégorie par défaut « Autres ».
  *
+ * Restreindre les styles selon la composition (metadata.patternName du bloc,
+ * posé par WordPress sur la racine d'une composition insérée) :
+ * - register_block_style( 'core/group', array( …, 'patterns' => array( 'mon-theme/chiffres' ) ) ) :
+ *   le style n'est proposé que sur la racine de ces compositions ;
+ * - waw_style_picker_restrict_pattern_styles( 'mon-theme/chiffres', array( 'tuiles' ) ) :
+ *   la racine de cette composition ne propose que ces styles, plus « Par défaut ».
+ *
  * @package WAW\StylePicker
  */
 
@@ -24,8 +31,9 @@ defined( 'ABSPATH' ) || exit;
  */
 function &waw_style_picker_store() {
 	static $store = array(
-		'categories'  => array(),
-		'assignments' => array(),
+		'categories'     => array(),
+		'assignments'    => array(),
+		'pattern_styles' => array(),
 	);
 	return $store;
 }
@@ -56,7 +64,7 @@ function waw_style_picker_register_category( $slug, $label ) {
  * @return bool False si le nom de bloc est invalide.
  */
 function waw_style_picker_assign_styles( $block_name, array $map ) {
-	if ( ! preg_match( '#^[a-z0-9-]+/[a-z0-9-]+$#', $block_name ) ) {
+	if ( ! waw_style_picker_is_valid_name( $block_name ) ) {
 		return false;
 	}
 	$store = &waw_style_picker_store();
@@ -67,6 +75,35 @@ function waw_style_picker_assign_styles( $block_name, array $map ) {
 }
 
 /**
+ * Limite les styles proposés sur la racine d'une composition.
+ *
+ * « Par défaut » reste toujours proposé, ainsi que le style déjà appliqué au
+ * bloc, pour pouvoir le retirer.
+ *
+ * @param string   $pattern_name Nom de la composition, ex. 'mon-theme/chiffres'.
+ * @param string[] $styles       Noms des styles autorisés.
+ * @return bool False si le nom de composition est invalide.
+ */
+function waw_style_picker_restrict_pattern_styles( $pattern_name, array $styles ) {
+	if ( ! waw_style_picker_is_valid_name( $pattern_name ) ) {
+		return false;
+	}
+	$store                                    = &waw_style_picker_store();
+	$store['pattern_styles'][ $pattern_name ] = array_values( array_map( 'sanitize_key', $styles ) );
+	return true;
+}
+
+/**
+ * Vérifie un nom de bloc ou de composition (espace/nom).
+ *
+ * @param mixed $name Nom à vérifier.
+ * @return bool
+ */
+function waw_style_picker_is_valid_name( $name ) {
+	return is_string( $name ) && (bool) preg_match( '#^[a-z0-9-]+/[a-z0-9-]+$#', $name );
+}
+
+/**
  * Configuration transmise à l'éditeur.
  *
  * @return array
@@ -74,13 +111,20 @@ function waw_style_picker_assign_styles( $block_name, array $map ) {
 function waw_style_picker_get_config() {
 	$store       = waw_style_picker_store();
 	$assignments = array();
+	$scopes      = array();
 
-	// Clé 'category' passée à register_block_style() : WordPress la conserve
-	// dans le registre mais ne la transmet pas au JS. On la relaie.
+	// Clés 'category' et 'patterns' passées à register_block_style() :
+	// WordPress les conserve dans le registre mais ne les transmet pas au JS.
+	// On les relaie.
 	foreach ( WP_Block_Styles_Registry::get_instance()->get_all_registered() as $block_name => $styles ) {
 		foreach ( $styles as $style_name => $style ) {
 			if ( ! empty( $style['category'] ) ) {
 				$assignments[ $block_name ][ $style_name ] = sanitize_key( $style['category'] );
+			}
+			if ( ! empty( $style['patterns'] ) && is_array( $style['patterns'] ) ) {
+				$scopes[ $block_name ][ $style_name ] = array_values(
+					array_filter( $style['patterns'], 'waw_style_picker_is_valid_name' )
+				);
 			}
 		}
 	}
@@ -99,6 +143,14 @@ function waw_style_picker_get_config() {
 	$config = array(
 		'categories'     => $categories,
 		'assignments'    => $assignments,
+		/** Style => compositions où il est proposé (clé 'patterns'). */
+		'scopes'         => $scopes,
+		/**
+		 * Composition => styles proposés sur sa racine.
+		 *
+		 * @param array<string, string[]> $pattern_styles Nom de composition => noms de styles.
+		 */
+		'patternStyles'  => (array) apply_filters( 'waw_style_picker_pattern_styles', $store['pattern_styles'] ),
 		/**
 		 * Nombre minimal de styles (style par défaut natif compris) à partir
 		 * duquel la modale remplace le sélecteur natif. En dessous, les
