@@ -6,6 +6,8 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), num
 
 ## [Non publié]
 
+## [0.1.2] - 2026-10-06
+
 ### Ajouté
 
 - Clé `pickable` de `register_block_style()` : `false` pour un style technique, posé dans le code et jamais proposé (il reste affiché s'il est déjà appliqué).
@@ -42,6 +44,7 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), num
 - Activation automatique sur tout bloc ayant au moins 4 styles, filtres `waw_style_picker_min_styles` et `waw_style_picker_excluded_blocks`.
 - API PHP de catégories : `waw_style_picker_register_category()`, `waw_style_picker_assign_styles()`, clé `category` dans `register_block_style()`, filtre `waw_style_picker_config`.
 
-[Non publié]: https://github.com/thierrypigot/waw-style-picker/compare/v0.1.1...HEAD
+[Non publié]: https://github.com/thierrypigot/waw-style-picker/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/thierrypigot/waw-style-picker/releases/tag/v0.1.2
 [0.1.1]: https://github.com/thierrypigot/waw-style-picker/releases/tag/v0.1.1
 [0.1.0]: https://github.com/thierrypigot/waw-style-picker/releases/tag/v0.1.0
