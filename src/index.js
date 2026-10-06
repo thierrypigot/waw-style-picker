@@ -220,10 +220,11 @@ const getPreviewBase = ( block ) => {
 };
 
 /*
- * Largeur de rendu simulée selon le nombre de styles par ligne : une vignette
- * pleine largeur rendue sur 400px afficherait un texte démesuré.
+ * Largeur de rendu simulée, identique quel que soit le nombre de styles par
+ * ligne : la vignette est réduite à l'échelle au lieu de basculer sur les
+ * media queries mobiles du bloc.
  */
-const PREVIEW_VIEWPORTS = { 1: 1100, 2: 700, 3: 400 };
+const PREVIEW_VIEWPORT = 1100;
 
 function StylePreview( { block, styleName, viewportWidth } ) {
 	const previewBlock = useMemo( () => {
@@ -403,7 +404,7 @@ function StylePickerModal( { block, styles, activeStyle, onSelect, onClose } ) {
 											<StylePreview
 												block={ block }
 												styleName={ styleNameOf( style ) }
-												viewportWidth={ PREVIEW_VIEWPORTS[ columns ] }
+												viewportWidth={ PREVIEW_VIEWPORT }
 											/>
 										</span>
 										<span className="waw-style-picker__title">{ style.label }</span>
