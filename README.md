@@ -29,6 +29,8 @@ Développée par [WeAre[WP]](https://www.wearewp.pro/).
 1. Télécharger `waw-style-picker-X.Y.Z.zip` depuis la page [Releases](https://github.com/thierrypigot/waw-style-picker/releases).
 2. Dans WordPress : **Extensions › Ajouter › Téléverser une extension**, puis activer.
 
+Les versions suivantes arrivent ensuite comme toute mise à jour d'extension, dans **Tableau de bord › Mises à jour** : l'extension interroge les releases GitHub via [plugin-update-checker](https://github.com/YahnisElsts/plugin-update-checker) (embarqué dans `lib/`) et installe le zip joint à la release.
+
 ### Depuis les sources
 
 ```bash

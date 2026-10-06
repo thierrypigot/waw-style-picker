@@ -10,6 +10,7 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), num
 
 - Clé `pickable` de `register_block_style()` : `false` pour un style technique, posé dans le code et jamais proposé (il reste affiché s'il est déjà appliqué).
 - Clé `root_only` : style proposé seulement sur un bloc de premier niveau (une section de page), jamais sur un bloc imbriqué, y compris dans « Modifier la composition ».
+- Mises à jour automatiques depuis les releases GitHub, via plugin-update-checker 5.7 embarqué dans `lib/` : l'extension apparaît dans **Tableau de bord › Mises à jour** et installe le zip de la release.
 
 ### Modifié
 
@@ -19,6 +20,7 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), num
 ### Corrigé
 
 - Bouton natif « Styles aléatoires » (goutte) masqué sur les blocs gérés par l'extension : il faisait défiler tous les styles, restrictions ignorées (un bandeau pouvait passer en « Photo de CTA »).
+- Aperçus à deux ou trois styles par ligne : le bloc garde sa mise en page bureau, réduite à l'échelle, au lieu de basculer sur ses media queries mobiles.
 - Plus de bouton « Style » sur les blocs intérieurs d'une composition verrouillée (mode d'édition `contentOnly` ou `disabled`) : comme dans WordPress, seule la racine se configure. Une tuile aux textes colorés ne peut plus prendre un fond de la même couleur.
 
 ## [0.1.1] - 2026-10-05

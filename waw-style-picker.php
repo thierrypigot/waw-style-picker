@@ -10,7 +10,7 @@
  * Author URI:        https://www.wearewp.pro/
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Update URI:        false
+ * Update URI:        https://github.com/thierrypigot/waw-style-picker
  * Text Domain:       waw-style-picker
  *
  * @package WAW\StylePicker
@@ -19,6 +19,22 @@
 defined( 'ABSPATH' ) || exit;
 
 require_once __DIR__ . '/includes/api.php';
+
+/*
+ * Mises à jour depuis les releases GitHub : PUC télécharge le zip joint à la
+ * release (construit par la CI, avec build/). L'asset est exigé : l'archive du
+ * code source, sans build/, donnerait une extension inutilisable.
+ */
+require_once __DIR__ . '/lib/plugin-update-checker/plugin-update-checker.php';
+
+\YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+	'https://github.com/thierrypigot/waw-style-picker/',
+	__FILE__,
+	'waw-style-picker'
+)->getVcsApi()->enableReleaseAssets(
+	'/waw-style-picker-[0-9.]+\.zip$/',
+	\YahnisElsts\PluginUpdateChecker\v5p7\Vcs\Api::REQUIRE_RELEASE_ASSETS
+);
 
 /*
  * WP 7.1 : l'éditeur d'articles est désormais toujours iframé.

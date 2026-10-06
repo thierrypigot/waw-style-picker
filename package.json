@@ -12,6 +12,7 @@
   "files": [
     "waw-style-picker.php",
     "includes",
+    "lib",
     "build",
     "src/editor.css",
     "README.md",
